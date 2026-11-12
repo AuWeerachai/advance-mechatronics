@@ -4,9 +4,9 @@
 #include <stdint.h>
 
 //PART 3
-#define ENCODER_COUNTS_PER_MOTOR_REVOLUTION 48.0f
-#define MOTOR_GEAR_RATIO 4.4f
-#define ENCODER_COUNTS_PER_OUTPUT_REVOLUTION (ENCODER_COUNTS_PER_MOTOR_REVOLUTION * MOTOR_GEAR_RATIO)
+#define ENCODER_COUNTS_PER_MOTOR_REVOLUTION 48.0f                                                      // 12 encoder cycles * 4 edges per cycle = 48 counts per motor revolution
+#define MOTOR_GEAR_RATIO 4.4f                                                                          // 4.4 motor revolutions per output-shaft revolution
+#define ENCODER_COUNTS_PER_OUTPUT_REVOLUTION (ENCODER_COUNTS_PER_MOTOR_REVOLUTION * MOTOR_GEAR_RATIO)  // 48 * 4.4 = 211.2 counts per output-shaft revolution
 
 //PART 3
 void initEncoder(void);

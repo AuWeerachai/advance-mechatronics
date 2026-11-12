@@ -20,12 +20,12 @@
 /* Macros----------------------------------------------------------*/
 
 //Registers
-#define USART3_SR           (USART3_BASE_MORT + 0x0000) /*!< Status Register */
-#define USART3_DR             (USART3_BASE_MORT + 0x0004) /*!< Data Register */
-#define USART3_BRR            (USART3_BASE_MORT + 0x0008) /*!< Baud Rate Register */
-#define USART3_CR1            (USART3_BASE_MORT + 0x000C) /*!< Control Register 1 */
-#define USART3_CR2           (USART3_BASE_MORT + 0x0010)/*!< Control Register 2 */
-#define USART3_CR3            (USART3_BASE_MORT + 0x0014) /*!< Control Register 3 */
+#define USART3_SR           (USART3_BASE_MORT + 0x0) /*!< Status Register */
+#define USART3_DR             (USART3_BASE_MORT + 0x4) /*!< Data Register */
+#define USART3_BRR            (USART3_BASE_MORT + 0x8) /*!< Baud Rate Register */
+#define USART3_CR1            (USART3_BASE_MORT + 0xC) /*!< Control Register 1 */
+#define USART3_CR2           (USART3_BASE_MORT + 0x10)/*!< Control Register 2 */
+#define USART3_CR3            (USART3_BASE_MORT + 0x14) /*!< Control Register 3 */
 
 
 
@@ -49,19 +49,19 @@ void initUSART3(void)
     
     /*Complete strip-down of CR1 (Disables UE, sets 8-bit mode, No Parity) */
      reg_pointer = (volatile uint16_t *)USART3_CR1;
-    *reg_pointer = 0x0000; 
+    *reg_pointer = 0x0; 
     /* Write to USART CR2 (Clears stop bits to standard 1 Stop Bit) */
     reg_pointer = (volatile uint16_t *)USART3_CR2;
-    *reg_pointer = 0x0000;
+    *reg_pointer = 0x0;
     /* Write to USART CR3 (Clears hardware flow control properties) */
     reg_pointer = (volatile uint16_t *)USART3_CR3;
-    *reg_pointer = 0x0000;
+    *reg_pointer = 0x0;
 
 	/* Configure Baud Rate to 115200 (using 45 MHz APB1 clock calculation) */
     reg_pointer = (volatile uint16_t *)USART3_BRR;
     *reg_pointer = 0x187; //this is the right one when the clock is running at 180MHz
     //*reg_uart_brr = 0x30D;
-    //*reg_uart_brr = 0x008B;
+    //*reg_uart_brr = 0x8B;
     
     /*  Write to USART CR1 (Configures Word Length, Parity, TE, RE) */
     /*Bit 3 = TE (Tx Enable), Bit 2 = RE (Rx Enable)*/

@@ -16,10 +16,10 @@
 
 
 /* MACRO definitions----------------------------------------------------------*/
-#define FLASH_ACR			(FLASH_R_BASE_MORT + 0x00)
+#define FLASH_ACR			(FLASH_R_BASE_MORT + 0x0)
 
-#define PWR_CR          (PWR_BASE_MORT + 0x00)
-#define PWR_CSR         (PWR_BASE_MORT + 0x04)
+#define PWR_CR          (PWR_BASE_MORT + 0x0)
+#define PWR_CSR         (PWR_BASE_MORT + 0x4)
 
 /* function definitions----------------------------------------------------------*/
 

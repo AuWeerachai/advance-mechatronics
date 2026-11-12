@@ -7,7 +7,7 @@ _estack = 0x20020000;
 /* Memory layout matching the STM32F446ZE */
 MEMORY
 {
-  FLASH (rx)      : ORIGIN = 0x08000000, LENGTH = 512K
+  FLASH (rx)      : ORIGIN = 0x8000000, LENGTH = 512K
   SRAM (rwx)      : ORIGIN = 0x20000000, LENGTH = 128K
 }
 
@@ -17,7 +17,7 @@ SECTIONS
   .text :
   {
     . = ALIGN(4);
-    KEEP(*(.isr_vector)) /* Forces the vector table from startup file to stay at address 0x08000000 */
+    KEEP(*(.isr_vector)) /* Forces the vector table from startup file to stay at address 0x8000000 */
     *(.text)             /* All code from all .c files */
     *(.text*)            
     *(.rodata)           /* Constant data like strings or const variables */
