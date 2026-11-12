@@ -21,7 +21,7 @@
 //
 //     while(1)
 //     {
-//         delayMicroseconds(200000);                        // Wait 0.2 seconds between prints; ADC and DMA keep running
+//         delayMicroseconds(200000);                        // Chosen print interval: 200,000 us = 0.2 s = 5 prints/s; ADC and DMA keep running
 //         printfUSART3("PF7: %u\r\n", (uint32_t)adcValue);  // Print the saved ADC reading
 //     }
 // }
@@ -46,7 +46,7 @@ int main(void)
 
     while(1)
     {
-        delayMicroseconds(200000);                                     // Wait 0.2 seconds between prints; ADC and DMA keep running
+        delayMicroseconds(200000);                                     // Chosen print interval: 200,000 us = 0.2 s = 5 prints/s; ADC and DMA keep running
         pf7 = adcValuesFromDMA[0];                                     // First ADC channel is PF7, so DMA slot [0] holds PF7; no pin ID is stored
         pf8 = adcValuesFromDMA[1];                                     // Second ADC channel is PF8, so DMA slot [1] holds PF8
         pf9 = adcValuesFromDMA[2];                                     // Third ADC channel is PF9, so DMA slot [2] holds PF9
@@ -69,7 +69,7 @@ int main(void)
 //
 //     while(1)
 //     {
-//         delayMicroseconds(10000);             // Wait 10 ms between motor duty updates; ADC and DMA keep running
+//         delayMicroseconds(10000);             // Chosen motor duty update interval: 10,000 us = 10 ms; ADC and DMA keep running
 //         runMotorFromADC((uint32_t)adcValue);  // Scale the latest PF7 potentiometer reading to motor duty 0-1000
 //     }
 // }

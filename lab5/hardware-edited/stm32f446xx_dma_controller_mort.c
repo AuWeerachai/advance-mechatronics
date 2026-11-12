@@ -3,7 +3,7 @@
 #include "stm32f446xx_rcc_mort.h"
 
 //PART 1.1
-#define DMA2_BASE_ADDRESS ((uint32_t)0x40026400)
+#define DMA2_BASE_ADDRESS ((uint32_t)0x40026400)  // STM RM0390 memory map: DMA2 base address; S0 registers control Stream0
 #define DMA2_LIFCR_REGISTER (DMA2_BASE_ADDRESS + 0x8)
 #define DMA2_S0CR_REGISTER (DMA2_BASE_ADDRESS + 0x10)
 #define DMA2_S0NDTR_REGISTER (DMA2_BASE_ADDRESS + 0x14)
@@ -50,10 +50,10 @@ void initDMA2Stream0(volatile uint16_t * destination, uint32_t numberOfValues)
 
     reg_pointer = (volatile uint32_t *)DMA2_S0CR_REGISTER;   // Select the DMA stream settings register
     *reg_pointer = 0;                                        // Clear settings; keep ADC address fixed and copy to memory
-    *reg_pointer = *reg_pointer | DMA_CHANNEL2;              // Chip routing: DMA2 Stream0 + channel 2 listens to ADC3; unrelated to ADC input channel 2
+    *reg_pointer = *reg_pointer | DMA_CHANNEL2;              // STM RM0390 Rev 6 table 29: DMA2 Stream0 channel 2 receives ADC3 requests
     *reg_pointer = *reg_pointer | DMA_MEMORY_HALFWORD;       // Write 16 bits into memory per reading
     *reg_pointer = *reg_pointer | DMA_PERIPHERAL_HALFWORD;   // Read 16 bits from the ADC result register
-    *reg_pointer = *reg_pointer | DMA_CIRCULAR;              // After the last copy, return to slot [0]; overwrite old readings without clearing the array
+    *reg_pointer = *reg_pointer | DMA_CIRCULAR;              // Reload starting address and count after 1 or 3 copies; overwrite old readings, do not clear memory
     if(numberOfValues == 3)
     {
         *reg_pointer = *reg_pointer | DMA_MEMORY_INCREMENT;  // 16 bits = 2 bytes: advance destination by 2 bytes, matching uint16_t array slots

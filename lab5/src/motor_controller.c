@@ -5,11 +5,11 @@
 #include "stm32f446xx_timer_mort.h"
 
 //PART 3
-#define CONTROL_INTERVAL_US ((uint32_t)10000)  // 10,000 us = 10 ms; position control runs about 100 times/second
-#define POSITION_KP 20.0f                      // Each count of position error adds 20 to the signed duty command
-#define POSITION_KD 0.4f                       // Subtract 0.4 * speed in counts/second to oppose motion
-#define POSITION_TOLERANCE_COUNTS 1            // Within +/-1 encoder count of the target counts as close enough
-#define SETTLED_SAMPLES 20                     // 20 checks * 10 ms = about 0.2 s near the target with zero measured speed
+#define CONTROL_INTERVAL_US ((uint32_t)10000)  // Chosen 10 ms update period: 1,000,000 us/s / 10,000 us = 100 control updates/s
+#define POSITION_KP 20.0f                      // Initial P gain, needs motor tuning: 20 duty units per count of position error
+#define POSITION_KD 0.4f                       // Initial D gain, needs motor tuning: subtract 0.4 duty units per count/second
+#define POSITION_TOLERANCE_COUNTS 1            // Chosen tolerance: +/-1 encoder count, the smallest nonzero count step
+#define SETTLED_SAMPLES 20                     // Chosen settling check: 20 * 10 ms = about 0.2 s within tolerance with zero measured speed
 
 enum MotorState
 {
@@ -45,7 +45,7 @@ static uint32_t checkButtonPress(void)
         buttonSamples = buttonSamples + 1;
     }
 
-    if(buttonSamples == 3 && button != stableButton)  // Accept 3 matching 10 ms checks; reject bouncing and repeated events while held
+    if(buttonSamples == 3 && button != stableButton)  // Chosen debounce: 3 matching samples at 10 ms intervals filter brief contact bounce; held button triggers once
     {
         stableButton = button;
         if(stableButton == 1)
@@ -103,7 +103,7 @@ void runMotorController(void)
     {
         if(settledSamples < SETTLED_SAMPLES)
         {
-            settledSamples = settledSamples + 1;  // Count checks with no movement and small position error
+            settledSamples = settledSamples + 1;  // Count checks within tolerance with no encoder-count change since the last check
         }
     }
     else

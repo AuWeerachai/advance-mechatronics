@@ -42,7 +42,7 @@ void initTimer2(void)
     *reg_pointer = 0;                                        // Stop Timer2 and clear its settings
 
     reg_pointer = (volatile uint32_t *)TIMER2_PSC_REGISTER;  // Select the clock divider register
-    *reg_pointer = 89;                                       // Timer input = 90 MHz; PSC divides by value + 1: 90 MHz / 90 = 1 MHz = 1 tick/us
+    *reg_pointer = 89;                                       // system_mort.c sets APB1 = 45 MHz and timer clock = 90 MHz; PSC = 90 - 1 gives 1 tick/us
 
     reg_pointer = (volatile uint32_t *)TIMER2_ARR_REGISTER;  // Select the counter limit register
     *reg_pointer = (uint32_t)0xFFFFFFFF;                     // Maximum 32-bit count; wraps to 0 after 2^32 microseconds (about 71.6 minutes)
@@ -97,7 +97,7 @@ void initTimer3PWM(void)
     *reg_pointer = 0;                                        // Use the 90 MHz timer clock without division
 
     reg_pointer = (volatile uint32_t *)TIMER3_ARR_REGISTER;  // Select the counter limit register
-    *reg_pointer = 2999;                                     // Count 0 through 2999 = 3000 ticks; 90 MHz / 3000 = 30 kHz
+    *reg_pointer = 2999;                                     // Lab 5 Part 2 requests about 30 kHz: 90 MHz / 30 kHz = 3000 ticks; ARR = 3000 - 1
 
     reg_pointer = (volatile uint32_t *)TIMER3_CCR3_REGISTER;  // Select the PWM duty register
     *reg_pointer = 0;                                         // Start with zero duty
@@ -125,7 +125,7 @@ void writeTimer3Duty(uint32_t duty)
 {
     volatile uint32_t * reg_pointer;
 
-    if(duty > 1000)
+    if(duty > 1000)  // Software duty scale: 1000 means 100%; limit larger commands to full duty
     {
         duty = 1000;
     }
