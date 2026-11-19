@@ -17,17 +17,15 @@ LDFLAGS = -T linker.ld -nostdlib
 # Explicitly list all your C source files, including their subfolder paths
 C_SOURCES = src/main.c \
 			src/sensors.c \
-			src/fan.c \
-			src/led.c \
+			src/motor.c \
+			src/motor_controller.c \
 			hardware/stm32f446xx_system_mort.c \
 			hardware-edited/stm32f446xx_gpio_mort.c \
 			hardware/stm32f446xx_rcc_mort.c \
 			hardware-edited/stm32f446xx_timer_mort.c \
 			hardware/stm32f446xx_usart3_mort.c \
-			hardware-edited/stm32f446xx_interruptcontroller_mort.c \
 			hardware-edited/stm32f446xx_dma_controller_mort.c \
-			hardware-edited/stm32f446xx_adc_mort.c \
-			src/motor.c
+			hardware-edited/stm32f446xx_adc_mort.c
 
 # Your assembly startup file
 S_SOURCES = hardware/startup_stm32f4xx.s

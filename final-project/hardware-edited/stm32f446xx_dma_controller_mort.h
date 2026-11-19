@@ -3,7 +3,6 @@
 
 #include <stdint.h>
 
-//PART 1.1
 void initDMA2Stream0(volatile uint16_t * destination, uint32_t numberOfValues);
 
 #endif

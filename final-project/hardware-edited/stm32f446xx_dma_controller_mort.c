@@ -2,7 +2,6 @@
 #include "stm32f446xx_adc_mort.h"
 #include "stm32f446xx_rcc_mort.h"
 
-//PART 1.1
 #define DMA2_BASE_ADDRESS ((uint32_t)0x40026400)  // STM RM0390 memory map: DMA2 base address; S0 registers control Stream0
 #define DMA2_LIFCR_REGISTER (DMA2_BASE_ADDRESS + 0x8)
 #define DMA2_S0CR_REGISTER (DMA2_BASE_ADDRESS + 0x10)
@@ -11,7 +10,6 @@
 #define DMA2_S0M0AR_REGISTER (DMA2_BASE_ADDRESS + 0x1C)
 #define DMA2_S0FCR_REGISTER (DMA2_BASE_ADDRESS + 0x24)
 
-//PART 1.1
 #define DMA_STREAM_ENABLE ((uint32_t)0x1)          // 0x1 = 2^0; stream control bit 0 enables transfers
 #define DMA_STREAM0_CLEAR_FLAGS ((uint32_t)0x3D)   // 0x3D = bits 5,4,3,2,0; writing 1 clears each Stream0 status flag
 #define DMA_CHANNEL0 ((uint32_t)0)                 // CHSEL bits 27:25 = 000: ADC1 requests on DMA2 Stream0.
@@ -20,7 +18,6 @@
 #define DMA_MEMORY_INCREMENT ((uint32_t)0x400)     // 0x400 = 2^10; bit 10 advances the memory address after each copy
 #define DMA_CIRCULAR ((uint32_t)0x100)             // 0x100 = 2^8; bit 8 reloads the count and starting memory address
 
-//PART 1.1
 void initDMA2Stream0(volatile uint16_t * destination, uint32_t numberOfValues)
 {
     volatile uint32_t * reg_pointer;
