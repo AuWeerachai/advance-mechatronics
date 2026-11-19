@@ -29,6 +29,12 @@ uint32_t readHandSensor(void)
     return (uint32_t)sensorReadings[1];  // A1 / PC0: raw hand sensor reading, 0-4095.
 }
 
+uint32_t readLeverSensor(void)
+{
+    return (uint32_t)sensorReadings[2];  // A2 / PC3: raw lever position, 0-4095.
+}
+
+
 uint32_t calculateSharpDistanceCm(uint32_t reading)
 {
     // Shared calibration assumes the hand or ball is physically at least 20 cm away.
@@ -78,10 +84,6 @@ uint32_t calculateSharpDistanceCm(uint32_t reading)
     return 70; // Include the low end of the measured 70 cm reading range.
 }
 
-uint32_t readLeverSensor(void)
-{
-    return (uint32_t)sensorReadings[2];  // A2 / PC3: raw lever position, 0-4095.
-}
 
 uint32_t readClockStartSensor(void)
 {
