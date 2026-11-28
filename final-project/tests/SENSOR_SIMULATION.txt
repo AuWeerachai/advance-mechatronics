@@ -1,0 +1,93 @@
+Sensor-noise simulation results
+
+Run: python3 tests/run.py
+Main scenario file: tests/check_sensor_noise.c
+
+What was simulated
+------------------
+The test writes raw values into the same 3-value buffer used by the ADC/DMA
+sensor code. It runs the actual calibration, event checks, event queue,
+services, game/round/pump state machines and fan controller.
+Peripheral time and digital inputs are simulated; fan duty commands are recorded.
+This is software logic simulation, not a physical model of ball/fan motion.
+
+Test-only target distances: 30, 45 and 60 cm. Production target distances remain
+unassigned. The normal event sampling interval is 10 ms. Tests advance time in
+1 ms steps, with additional deliberate scheduling gaps.
+The injected noise values and dropout rates are test cases, not measured sensor
+failure rates. Test programs run on the computer; no libraries were added to
+the MCU firmware.
+
+Confirmed behavior
+------------------
+1. Small noise: +/-15 ADC counts around the calibration points for the three
+   test targets completed all 5 rounds successfully.
+2. One invalid hand reading: fan command changed 50% -> 0% -> 50% over two
+   10 ms intervals. The hand input currently has no filtering.
+3. One valid-range hand spike: a single raw reading corresponding to 70 cm
+   changed the fan command from 50% to 100% when air was full.
+4. One invalid ball reading at the reposition deadline failed the round.
+   This follows the current immediate deadline decision; earlier good readings
+   do not replace a bad reading at the deadline.
+5. Holding: injected invalid samples occupying 0%, 10% and 20% of the tested
+   4-second windows passed. 21%, 30% and 100% failed. Invalid samples count as
+   outside the target, rather than reusing the previous valid position.
+   The test keeps the reposition deadline valid for these holding cases.
+6. Range boundary: raw 1130 gives 70 cm, while 1129 is invalid. Alternating
+   those values caused 20 fan-command changes in 200 ms, between 100% and 0%.
+7. Lever: a low -> one full-scale spike -> low sequence counted as a complete
+   stroke. There is no time qualification of the lever thresholds.
+8. Clock END: one observed HIGH ended the game. The clock sensors have no
+   glitch rejection. The existing start-button debounce is separate.
+9. A constant valid ball reading passed the hold check. Unchanged data cannot
+   distinguish a stationary ball from a stuck sensor/DMA buffer. The current
+   code has no sensor/DMA freshness diagnostic.
+10. The previously observed too-close SHARP value 1398 converts to 53 cm.
+    A plausible raw value is not proof that the object is within the intended
+    physical measuring range. The design still requires at least 20 cm spacing.
+
+Timing bug found and fixed
+--------------------------
+Before: pausing event checks across the reposition deadline, then supplying a
+valid ball reading 80 ms late, started HOLDING. This could accept a late arrival.
+After: events.c rejects a reposition check delayed by more than
+BALL_SAMPLE_MAX_GAP_US (currently 20 ms). It reports an invalid position and
+fails the reposition phase. Tests cover the exact 20 ms boundary, one
+microsecond beyond it, 80 ms lateness, and Timer 2 wraparound.
+This is a bounded software deadline check; it does not reconstruct the actual
+ball position during a missed interval.
+
+Calibration sensitivity: +/-15 ADC counts
+----------------------------------------
+All 31 integer offsets from -15 through +15 were tested equally.
+Nominal distance | Valid converted values | Invalid values
+20 cm            | 20 cm                  | 0 / 31
+30 cm            | 29-30 cm               | 0 / 31
+40 cm            | 39-41 cm               | 0 / 31
+45 cm            | 43-45 cm               | 0 / 31
+50 cm            | 49-50 cm               | 0 / 31
+55 cm            | 54-55 cm               | 0 / 31
+60 cm            | 59-61 cm               | 0 / 31
+65 cm            | 63-66 cm               | 0 / 31
+70 cm            | 68-70 cm               | 5 / 31
+
+Whole-centimetre conversion truncates fractional distances. These results
+verify the programmed calibration, not the physical accuracy of either sensor.
+
+Pending filtering decision
+--------------------------
+A possible simple change is the middle of 3 readings, sampled 10 ms apart,
+for each SHARP sensor. It can reject an isolated spike without a library.
+It adds up to about 20 ms of software response delay and cannot reliably reject
+long bursts, alternating bad values, stuck valid values or systematic error.
+It also changes which position is accepted at the reposition deadline, so it
+has not been added without resolving that behavior with the user.
+
+Verification
+------------
+The complete local test suite and ARM firmware build passed after the timing
+fix. Existing tests also cover button debounce, no consecutive target repeats,
+full holding/reposition periods, pump counting, air depletion, PWM limits,
+serial congestion, event queue overflow, timer wrap and tachometer interrupts.
+Some noise tests deliberately confirm undesirable current behavior; a passing
+test suite does not mean all sensor imperfections are handled.

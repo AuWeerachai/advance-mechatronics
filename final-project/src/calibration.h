@@ -8,6 +8,8 @@
 #define PUMP_HIGH_ADC ((uint32_t)170) // At least 170 marks the top; return low to finish the cycle.
 
 // Shared Sharp calibration: measured with the hand sensor on A1 / PC0.
+#define SHARP_MIN_DISTANCE_CM 20U
+#define SHARP_MAX_DISTANCE_CM 70U
 #define SHARP_ADC_20_CM ((uint32_t)3175) 
 #define SHARP_ADC_30_CM ((uint32_t)2435) 
 #define SHARP_ADC_40_CM ((uint32_t)1825) 

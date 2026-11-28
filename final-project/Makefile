@@ -16,6 +16,13 @@ LDFLAGS = -T linker.ld -nostdlib
 
 # Explicitly list all your C source files, including their subfolder paths
 C_SOURCES = src/main.c \
+			src/events.c \
+			src/framework.c \
+			src/services.c \
+			src/state_machine.c \
+			src/serial.c \
+			src/targets.c \
+			src/tachometer.c \
 			src/sensors.c \
 			src/motor.c \
 			src/motor_controller.c \
@@ -25,7 +32,8 @@ C_SOURCES = src/main.c \
 			hardware-edited/stm32f446xx_timer_mort.c \
 			hardware/stm32f446xx_usart3_mort.c \
 			hardware-edited/stm32f446xx_dma_controller_mort.c \
-			hardware-edited/stm32f446xx_adc_mort.c
+			hardware-edited/stm32f446xx_adc_mort.c \
+			hardware-edited/stm32f446xx_interruptcontroller_mort.c
 
 # Your assembly startup file
 S_SOURCES = hardware/startup_stm32f4xx.s

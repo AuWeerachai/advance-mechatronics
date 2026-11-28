@@ -71,6 +71,10 @@
 #define PORTE_AFR2_PIN9_MASK ((uint32_t)0xF0)
 #define PORTE_AFR2_PIN9_AF1 ((uint32_t)0x10)
 
+// PD12: digital input for the fan tachometer interrupt.
+#define PORTD_MODER_PIN12_MASK ((uint32_t)0x03000000)
+#define PORTD_PUPDR_PIN12_MASK ((uint32_t)0x03000000)
+
 // USART3 serial communication.
 void initGpioD8D9AsAF7( void )
 {
@@ -220,4 +224,15 @@ void initGpioE9AsFanOutput(void)
     reg_pointer = (volatile uint32_t *)PORTE_MODER_REGISTER;
     *reg_pointer = *reg_pointer & ~PORTE_MODER_PIN9_MASK;
     *reg_pointer = *reg_pointer | PORTE_MODER_PIN9_AF;
+}
+
+void initGpioD12AsFanTachInput(void)
+{
+    volatile uint32_t * reg_pointer;
+
+    RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOD, ENABLE);
+    reg_pointer = (volatile uint32_t *)PORTD_MODER_REGISTER;
+    *reg_pointer = *reg_pointer & ~PORTD_MODER_PIN12_MASK; // Bits 25:24 = 00: input.
+    reg_pointer = (volatile uint32_t *)PORTD_PUPDR_REGISTER;
+    *reg_pointer = *reg_pointer & ~PORTD_PUPDR_PIN12_MASK; // External pull-up to 3.3 V.
 }

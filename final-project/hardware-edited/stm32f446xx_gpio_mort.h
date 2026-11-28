@@ -21,4 +21,7 @@ uint32_t readGpioE13(void);
 // Fan PWM control input on D6 / PE9.
 void initGpioE9AsFanOutput(void);
 
+// Report tachometer connection; only initialized when FAN_TACH_CONNECTED is 1.
+void initGpioD12AsFanTachInput(void);
+
 #endif

@@ -1,5 +1,6 @@
 #include "stm32f446xx_timer_mort.h"
 #include "stm32f446xx_rcc_mort.h"
+#include "fan_config.h"
 
 // Timer 2: one count per microsecond.
 #define TIMER2_BASE_ADDRESS ((uint32_t)0x40000000)
@@ -92,7 +93,7 @@ void initTimer1FanPWM(void)
     reg_pointer = (volatile uint32_t *)TIMER1_PSC_REGISTER;
     *reg_pointer = 0;
     reg_pointer = (volatile uint32_t *)TIMER1_ARR_REGISTER;
-    *reg_pointer = 7199;  // Timer 1 clock = 180 MHz; 180,000,000 / 7200 = 25,000 Hz.
+    *reg_pointer = FAN_PWM_PERIOD_COUNTS - 1;  // Timer 1 clock = 180 MHz; 180,000,000 / 7200 = 25,000 Hz.
     reg_pointer = (volatile uint32_t *)TIMER1_RCR_REGISTER;
     *reg_pointer = 0;     // Update every PWM period.
     reg_pointer = (volatile uint32_t *)TIMER1_CCR1_REGISTER;
@@ -117,10 +118,10 @@ void writeTimer1FanDuty(uint32_t duty)
     volatile uint32_t * reg_pointer;
 
     // Duty scale: 0 = 0% HIGH time; 1000 = 100% HIGH time.
-    if(duty > 1000)
+    if(duty > FAN_DUTY_SCALE)
     {
-        duty = 1000;
+        duty = FAN_DUTY_SCALE;
     }
     reg_pointer = (volatile uint32_t *)TIMER1_CCR1_REGISTER;
-    *reg_pointer = duty * 7200 / 1000;  // Multiply first so integer division keeps partial duty values.
+    *reg_pointer = duty * FAN_PWM_PERIOD_COUNTS / FAN_DUTY_SCALE;  // Multiply first so integer division keeps partial duty values.
 }

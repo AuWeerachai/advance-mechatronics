@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 
-uint32_t runMotorController(void);
+// Apply the hand-distance command, capped by the available air percentage.
+uint32_t runMotorController(uint32_t handDistance, uint32_t airLevel);
 
 #endif

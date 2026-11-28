@@ -1,0 +1,171 @@
+Air Levitation Tower -- game software
+
+Organization (Pre-Lecture 12: events, framework, services and state machines)
+
+main.c          Initialize modules, then check events, service one queued event,
+                and send at most one ready serial character per loop.
+events.c/h      Detect sensor changes, timed ball samples and timer expirations.
+                An event contains a type, value and Timer 2 timestamp.
+framework.c/h   FIFO queue; dispatch one event per call to runService().
+services.c/h    Route events and perform actions: start/stop, air, fan and status.
+state_machine.c/h
+                WELCOME/PLAYING game machine, REPOSITIONING/HOLDING round
+                machine, and the separate min-max-min pump machine.
+targets.c/h     Select targetLED_1/2/3, compare ball distance and accumulate
+                in-range holding time. Consecutive targets must differ.
+tachometer.c/h  Convert interrupt pulse counts and elapsed time into RPM events.
+interruptcontroller_mort.c/h
+                Configure PD12 rising-edge interrupts and count fan tach pulses.
+serial.c/h      Buffered ready-only UART; no runtime UART wait loops.
+game_config.h   Game rules, target distances, sample intervals and air settings.
+fan_config.h    Fan PWM, hand mapping, tach enable, pulses/rev and sample interval.
+calibration.h   Measured Sharp calibration points and lever thresholds.
+
+Event path example
+
+Ball sample -> BALL_SAMPLE_READY -> FIFO -> runService()
+  -> runRoundStateMachine() -> recordTargetSample().
+
+Holding timeout -> HOLDING_TIMEOUT -> round machine checks accumulated time
+  -> ROUND_PASSED or ROUND_FAILED -> game machine starts the next round or
+     stops the game. Physical inputs and serial simulation use the same queue.
+
+Game behavior with the default rules
+
+1. WELCOME: fan duty is zero. Read the external START button only in this state.
+   After a stable release, a press stable for 30 ms posts START_BUTTON_PRESSED.
+   Every bounce restarts the stability timer. There is no delay or wait loop.
+   The game starts only when END is clear and all target distances are set.
+   Hand detection never starts the game; the hand controls fan duty during play.
+2. Start with 100% air, reset pump progress and choose a random target LED.
+3. REPOSITIONING lasts the full 4 seconds. Early arrival does not shorten it.
+4. At the reposition deadline, read the ball distance. Outside +/-3 cm or an
+   invalid reading fails immediately and returns to WELCOME with zero fan duty.
+5. Otherwise enter HOLDING for the next full 4 seconds. Accumulate time within
+   +/-3 cm. The required total is 80%, or 3.2 seconds. Separate visits add up;
+   briefly leaving the range does not immediately fail the game.
+6. At the holding deadline, pass if accumulated time meets the requirement.
+   Select another target and repeat. Passing all 5 rounds gives WON, returns
+   to WELCOME, clears the active target and commands zero fan duty.
+7. A failed hold, blocked END sensor, serial stop/timeout or queue overflow
+   also ends the game. Result and completed round count remain available.
+8. During PLAYING the button is not read, and START_BUTTON_PRESSED is ignored.
+   Returning to WELCOME resets debounce: require a stable release followed by
+   a new stable press. A held button cannot restart. Serial h can simulate a
+   debounced press while in WELCOME; END must still be clear.
+
+Ball sampling occurs every 10 ms. Each sample describes the following interval.
+An interval longer than BALL_SAMPLE_MAX_GAP_US is not credited. Time beyond
+its holding deadline is not credited. Timing uses unsigned Timer 2 differences
+so the 32-bit microsecond counter wrapping does not disrupt a round.
+If the reposition deadline check runs more than BALL_SAMPLE_MAX_GAP_US late
+(currently 20 ms), the round fails because its deadline position is unknown.
+
+Pumping, air and hand control run during both round phases
+
+- Lever raw ADC <15 arms the stroke; >=170 reaches maximum; returning below15
+  completes one stroke. Holding an endpoint cannot count twice. Partial motion
+  does not count. The simplified rule accepts min-max-min, including hesitations.
+- 2 complete strokes add 10 percentage points of air, capped at 100%.
+- Air loses 3 percentage points per elapsed second. Pump progress resets after
+  each reward and when the game starts/stops, not at each target change.
+- Hand distance 20-70 cm maps to 0-100% PWM duty. Invalid readings command 0%.
+  Air caps that duty: 30% air limits the command to at most 30% PWM.
+- Zero air stops the fan command but does not itself end the game. Pumping can
+  restore air; the ball still has to meet its current round deadline.
+- The ball sensor judges target position. The hand sensor commands the fan.
+  RPM is measured for monitoring; there is no RPM feedback controller.
+
+Serial
+
+h=simulate accepted START press, p=one complete stroke, t=timeout, x=stop, ?=help.
+Status is scheduled every 0.5 s: phase, target, ball, accumulated holding time,
+hand, pump progress, elapsed game time, air, air LED count and RPM.
+A zero ball distance means an invalid/out-of-range reading, not a ball at 0 cm.
+If the UART is busy, game processing continues and that status message is skipped.
+
+Hardware integration pending
+
+Target distances are measured DOWN from the top Sharp sensor to the ball at
+that LED. They remain 0 in game_config.h until measured; startup explains this
+and the game cannot start with those unknown values. Tests supply separate
+example distances without changing production settings.
+
+Target LED selection and air LED count are available in software/status.
+Outputs awaiting pin assignment and hardware integration:
+- 10 air-status LEDs, ordered from the first to the tenth air level.
+- 3 target LEDs: targetLED_1, targetLED_2 and targetLED_3.
+- Clock-arm motor control through its motor driver, including return to START.
+  The number of control pins depends on the driver connection.
+- Speaker signal through the amplifier, for game status and height tones.
+
+Keep pins for each LED group close together and in order for easier debugging.
+Preserve existing sensor, serial and fan PWM assignments when planning these
+outputs. Final pins await the hardware team's connections. Speaker/audio code
+remains deferred until the game works and audio work is requested again.
+
+The BOM start button is Adafruit 1190, a 60 mm red arcade button with an optional
+LED. Its switch is normally open and closes when pressed:
+https://www.adafruit.com/product/1190
+Planned input connection is the switch to GND and a GPIO pull-up to 3.3 V,
+so the electrical level is LOW when pressed. readStartButton() normalizes this
+to 1=pressed, 0=released. That function currently returns released because the
+GPIO pin is unassigned. Replace its placeholder and initialize the pin once
+hardware is confirmed. The button LED is a separate output, not implemented.
+START_BUTTON_DEBOUNCE_US in game_config.h sets the debounce interval.
+
+Sensor audit against the downloaded Team#3 BOM:
+- Actual hand and ball measurement use two analog Sharp sensors, as confirmed
+  by the user. Keep the measured calibration, ADC scan and DMA buffer.
+- BOM row 27's VL53L4CD is unused. Do not add I2C or a sensor library.
+- BOM row 26 names GP2Y0A21YK0F; the sensors described/calibrated by the user
+  were marked 2Y0A02. Use the measured calibration already in calibration.h.
+- Lever potentiometer and two EE-SX1042 clock sensors are in the code. START
+  is read and recorded; END ends play. Clock-motor actuation is still pending.
+- Fan tach support is implemented but remains disabled pending pin confirmation.
+The firmware uses the existing register drivers and links without added libraries.
+
+Ordered fan: Sanyo Denki 9GA0812P4G0011, from the BOM purchase link.
+The BOM's Arctic description does not match that link or the ordered part number.
+Manufacturer: https://products.sanyodenki.com/en/sanace/dc/dc-fan/9GA0812P4G0011/
+Catalog: https://publish.sanyodenki.com/library/books/San_Ace_E/book/data/San_Ace_E.pdf
+Model family p. 101: 12 V, 0.48 A, 6800 RPM at full command, 25 kHz PWM;
+the final 1 denotes the model without ribs. The pulse-sensor description on
+p. 618 gives two pulses per revolution and an open-collector output.
+
+The report's proposed tach pin is PD12. Its EXTI line 12 interrupt driver is
+implemented, but FAN_TACH_CONNECTED stays 0 until wiring is confirmed. When
+enabled, use an external tach pull-up to 3.3 V (report: 10 kOhm). Each rising
+edge calls EXTI15_10_IRQHandler, which clears the pending flag and adds 1 to
+the pulse count. The main loop reads that count every 0.5 s without resetting it:
+RPM = pulse difference * 60,000 / elapsed milliseconds / pulses per revolution.
+Elapsed time is truncated to whole milliseconds to keep arithmetic 32-bit.
+Zero pulses over a sample window gives 0 RPM. The 16-bit count wraps after 65535;
+at the rated speed, a normal 0.5 s window contains about 113 pulses. The interval
+must contain fewer than 65536 pulses. Timer 4 is no longer used.
+The interrupt setup follows the GPIO EXTI pattern from Lecture 11 and Lab 4:
+SYSCFG selects PD12; EXTI selects rising edges; NVIC enables EXTI15_10.
+
+Target selection uses the timer value plus raw hand and lever ADC readings.
+For the first round, modulo 3 selects any target LED. Later rounds use modulo 2
+to choose between the other two LEDs, skipping the current LED. Consecutive
+targets cannot repeat, but an earlier target can return after another LED.
+This is simple input/timing-based selection and uses no random-number library.
+
+Non-blocking execution
+
+Runtime never waits for a sensor, timer or UART. Queue producers all run in the
+main loop. The only startup wait is the existing 10 us ADC stabilization delay.
+The tach interrupt only updates its pulse count; the main loop posts RPM events.
+The interrupt does not access the event queue.
+
+Build: make
+Local verification: python3 tests/run.py
+Tests cover EXTI routing and pulse counting, shared interrupt filtering,
+pulse/time wrap, button bounce/release/rearming and no button reads during play,
+FIFO/event timestamps, serial backpressure, boundary timing,
+cumulative holding percentage, all rounds, alternate header settings, pumping,
+air/hand limits, counter wrap, tach RPM, and GPIO/ADC/DMA/PWM register setup.
+Local register tests emulate memory; electrical behavior still needs a board test.
+Raw ADC noise/dropout simulations and their current limitations are recorded
+in tests/SENSOR_SIMULATION.txt. Run them with the same local verification command.

@@ -22,6 +22,7 @@ static uint16_t readings[3];
 
 int main(void)
 {
+    assert(readStartButton() == 0); // No assigned GPIO: the physical input is disabled.
     assert(calculateSharpDistanceCm(3175)==20);
     assert(calculateSharpDistanceCm(2435)==30);
     assert(calculateSharpDistanceCm(1825)==40);
@@ -132,14 +133,14 @@ int main(void)
     for(uint32_t i=0;i<sizeof(adc)/sizeof(adc[0]);i++)
     {
         samples[1]=adc[i];
-        assert(runMotorController()==duty[i]);
+        assert(runMotorController(calculateSharpDistanceCm(readHandSensor()), 100)==duty[i]);
         assert(REG(0x40010034)==duty[i]*7200/1000);
     }
     uint32_t previousDuty=1000;
     for(uint32_t raw=0;raw<=4095;raw++)
     {
         samples[0]=4095-raw;samples[1]=raw;samples[2]=(raw*7)%4096;
-        uint32_t command=runMotorController();
+        uint32_t command=runMotorController(calculateSharpDistanceCm(readHandSensor()), 100);
         assert(command<=1000 && REG(0x40010034)==command*7200/1000);
         if(raw<1130 || raw>3200)
         {
@@ -152,6 +153,16 @@ int main(void)
         }
     }
 
+    for(uint32_t air = 0; air <= 100; air++)
+    {
+        assert(runMotorController(70, air) == air * 10);
+        assert(REG(0x40010034) == air * 7200 / 100);
+    }
+    assert(runMotorController(45, 30) == 300);
+    assert(runMotorController(45, 100) == 500);
+    assert(runMotorController(70, UINT32_MAX) == 1000);
+    assert(runMotorController(0, 100) == 0);
+
     writeMotorPower(500);assert(REG(0x40010034)==3600);
     writeMotorPower(1000);assert(REG(0x40010034)==7200);
     writeMotorPower(1001);assert(REG(0x40010034)==7200);
@@ -162,4 +173,13 @@ int main(void)
         assert(REG(unusedGpio[i])==0x5A5A1234);
     }
     puts("PASS: PE9 open-drain AF1, 25 kHz fan PWM, calibrated ADC-to-duty mapping, invalid-input zero duty and no direction-pin writes.");
+    // The optional tach pin must preserve PD8/PD9 serial and every other pin.
+    REG(0x40020C00)=0x5A5A1234; REG(0x40020C0C)=0x5A5A1234; REG(0x40020C24)=0x5A5A1234;
+    initGpioD12AsFanTachInput();
+    assert(REG(0x40020C00)==(0x5A5A1234u & ~0x03000000u));
+    assert(REG(0x40020C0C)==(0x5A5A1234u & ~0x03000000u));
+    assert(REG(0x40020C24)==0x5A5A1234u);
+    assert((apb1Clock & RCC_APB1Periph_TIM4) == 0);
+    assert(readTimer2()==123456 && REG(0x4001002C)==7199);
+    puts("PASS: PD12 digital input preserves other pins and leaves fan PWM and timebase unchanged.");
 }

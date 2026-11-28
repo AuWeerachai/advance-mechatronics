@@ -14,7 +14,7 @@ void initSensors(void)
     initGpioC3AsAnalog();
     initGpioF15AsInput();
     initGpioE13AsInput();
-    initDMA2Stream0(sensorReadings, 3);
+    initDMA2Stream0(sensorReadings, 3); //equivalent to initDMA2Stream0(&sensorReadings[0], 3);
     initADC1();
     startADC1();
 }
@@ -93,4 +93,12 @@ uint32_t readClockStartSensor(void)
 uint32_t readClockEndSensor(void)
 {
     return readGpioE13();  // D3 / PE13: raw input level, 0 = LOW, 1 = HIGH.
+}
+
+uint32_t readStartButton(void)
+{
+    // Adafruit 1190: normally-open switch, separate from the button's LED.
+    // Planned connection: switch to GND, GPIO with a 3.3 V pull-up (pressed = LOW).
+    // TODO: initialize/read the assigned GPIO after the hardware team confirms its pin.
+    return 0; // Pin unassigned: report released, so it cannot accidentally start a game.
 }
